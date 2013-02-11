@@ -14,14 +14,14 @@ var ExchangeRates = [
   }
 ];
 
-var ExchangeRateNotifer = function(kind){
+var ExchangeRateNotifier = function(kind){
   this.kind = kind;
   this.pre_value = 0;
-  this.url = "http://info.finance.yahoo.co.jp/exchange/convert/?a=1&s=" + this.kind.from + "&t=" + this.kind.to;
-  //this.url = "http://stocks.finance.yahoo.co.jp/stocks/detail/?code=" + that.kind + "=X";
+  //this.url = "http://info.finance.yahoo.co.jp/exchange/convert/?a=1&s=" + this.kind.from + "&t=" + this.kind.to; // 簡易表示
+  this.url = "http://stocks.finance.yahoo.co.jp/stocks/detail/?code=" + this.kind.from + this.kind.to + "=X"; // 詳細表示
 };
   
-ExchangeRateNotifer.prototype._scrape = function(callback){
+ExchangeRateNotifier.prototype._scrape = function(callback){
   var that = this;
   console.log("scrape: " + that.url );
   jsdom.env(
@@ -35,9 +35,10 @@ ExchangeRateNotifer.prototype._scrape = function(callback){
         }
 
         var $ = window.$;
-        //var value = $(".stoksPrice").text();
-        var value = $(".emphasis").text();
-        var msg = "[" + moment().format('MM/DD HH:mm') + "] " + that.kind.from + "/" + that.kind.to + " : " + value;
+        //var value = $(".emphasis").text(); // 簡易表示
+        var value = $(".stoksPrice").text(); // 詳細表示
+        var nowStr = "[" + moment().format('MM/DD HH:mm:ss') + "]";
+        var msg = nowStr + " " + that.kind.from + "/" + that.kind.to + " : " + value;
         console.log(msg);
 
         // 前回値と異なれば Growlへ通知する
@@ -49,28 +50,29 @@ ExchangeRateNotifer.prototype._scrape = function(callback){
             upOrDown = "🔽 ";
           }
 
-          growl(upOrDown + msg);
+          // growlの表示のされ方を空白で調整
+          var growl_msg = nowStr + "　　　　　　　　" + upOrDown + that.kind.from + "/" + that.kind.to + " : " + value;
+          growl(growl_msg);
           that.pre_value = value;
         }
       }
   );
 };
 
-ExchangeRateNotifer.prototype.startNotify = function(){
+ExchangeRateNotifier.prototype.startNotify = function(){
   var that = this;
   var startTimer = function(){
     setTimeout(function(){
       that._scrape(startTimer);
-    }, 10000);
+    }, 30000);
   };
 
   that._scrape(startTimer);
 }
 
-
 function main(){
   ExchangeRates.forEach(function(rate){
-    var exnoti = new ExchangeRateNotifer(rate);
+    var exnoti = new ExchangeRateNotifier(rate);
     exnoti.startNotify();
   });
 }
