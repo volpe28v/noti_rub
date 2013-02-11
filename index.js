@@ -1,26 +1,39 @@
-
 var jsdom = require("jsdom");
 var _ = require('underscore');
 var moment = require('moment');
 var growl = require('growl');
 
-function showRub(){
+function showRub(pre_value, callback){
   jsdom.env(
-//    "http://info.finance.yahoo.co.jp/exchange/convert/?a=1&s=RUB&t=JPY",
     "http://stocks.finance.yahoo.co.jp/stocks/detail/?code=RUBJPY=X",
     ["http://code.jquery.com/jquery.js"],
     function (errors, window) {
       var $ = window.$;
-      var msg = "[" + moment().format('MM/DD, HH:mm') + "]" + " Rub/JPY: " + $(".stoksPrice").text();
-      console.log(msg);
-      growl(msg);
+      var value = $(".stoksPrice").text();
+
+      if ( value != pre_value ){
+        var msg = "[" + moment().format('MM/DD HH:mm') + "]" + " Rub/JPY: " + value;
+        console.log(msg);
+        growl(msg);
+        callback(value);
+      }
     }
   );
 }
 
-showRub();
+function main(){
+  var pre_rub = 0;
 
-setInterval(function(){
-  showRub();
-}, 60000);
+  var updatePreValue = function(value){
+    pre_rub = value;
+  }
+
+  showRub(pre_rub, updatePreValue);
+
+  setInterval(function(){
+    showRub(pre_rub, updatePreValue);
+  }, 30000);
+}
+
+main();
 
